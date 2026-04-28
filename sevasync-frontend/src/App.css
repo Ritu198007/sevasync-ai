@@ -253,3 +253,67 @@ button.ghost:hover { background-color: var(--accent-ai); color: var(--primary-na
 }
 
 .logout-btn:hover { background: white; color: var(--primary-navy); }
+
+.ai-bar {
+  display: flex;
+  align-items: center;
+  background: #0f172a;
+  border-radius: 40px;
+  padding: 8px 14px;
+  width: 500px;
+  height: 52px;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: white;
+  font-size: 15px;
+  padding: 0 10px;
+}
+
+.icon {
+  font-size: 18px;
+  color: #cbd5f5;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.icon:hover {
+  color: white;
+}
+
+.left {
+  margin-right: 8px;
+}
+
+.icons-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ai-mode {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.ai-mode:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

@@ -1,86 +1,115 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const Post = require('../models/Post');
 const { generateDescription } = require('../utils/gemini');
 
-// --- 1. SETUP IMAGE STORAGE (New Addition) ---
+// ===============================
+// 1. ENSURE UPLOAD FOLDER EXISTS
+// ===============================
+const uploadPath = path.join(__dirname, '..', 'uploads', 'posts');
+
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+  console.log("📁 Created uploads/posts folder");
+}
+
+// ===============================
+// 2. SETUP MULTER STORAGE
+// ===============================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/posts/'); 
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    cb(null, `POST-${Date.now()}-${file.originalname}`);
+    const uniqueName = `POST-${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
   }
 });
-const upload = multer({ storage: storage });
 
+const upload = multer({ storage });
 
-// --- 2. GET: Fetch all tasks (Normal & SOS) ---
+// ===============================
+// 3. GET ALL POSTS
+// ===============================
 router.get('/', async (req, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ GET POSTS ERROR:", err.message);
+    res.status(500).json({ message: "Failed to fetch posts" });
   }
 });
 
-
-// --- 3. POST: Report Normal Issue (Updated with Image & Multer) ---
-// Now supports 'upload.single('image')'
+// ===============================
+// 4. CREATE NORMAL POST
+// ===============================
 router.post('/', upload.single('image'), async (req, res) => {
   const { title, category, lat, lng, address } = req.body;
-  
+
   try {
-    // Step 7: AI Understanding (Gemini)
-    const description = await generateDescription(title);
-    
-    const newPost = new Post({ 
-      title, 
-      category, 
+    // 🧠 Safe Gemini AI call
+    let description = "No AI description available";
+    try {
+      description = await generateDescription(title);
+    } catch (err) {
+      console.log("⚠️ Gemini failed:", err.message);
+    }
+
+    const newPost = new Post({
+      title,
+      category,
       description,
-      image: req.file ? req.file.filename : null, // Saves image if uploaded
+      image: req.file ? req.file.filename : null,
       isEmergency: false,
       status: 'Reported',
-      location: { 
-        lat: lat ? parseFloat(lat) : null, 
+      location: {
+        lat: lat ? parseFloat(lat) : null,
         lng: lng ? parseFloat(lng) : null,
-        address 
+        address
       }
     });
 
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
+
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("❌ CREATE POST ERROR:", err.message);
+    res.status(400).json({ message: "Failed to create post" });
   }
 });
 
-
-// --- 4. POST: Trigger Emergency SOS (Kept your original logic) ---
+// ===============================
+// 5. SOS EMERGENCY POST
+// ===============================
 router.post('/sos', async (req, res) => {
   const { lat, lng } = req.body;
-  
-  const newSOS = new Post({
-    title: "🚨 EMERGENCY SOS TRIGGERED",
-    category: "Emergency",
-    description: `IMMEDIATE ASSISTANCE REQUIRED. Location captured at coordinates: ${lat}, ${lng}`,
-    isEmergency: true,
-    status: 'Reported',
-    location: { lat, lng }
-  });
 
   try {
+    const newSOS = new Post({
+      title: "🚨 EMERGENCY SOS TRIGGERED",
+      category: "Emergency",
+      description: `IMMEDIATE ASSISTANCE REQUIRED at ${lat}, ${lng}`,
+      isEmergency: true,
+      status: 'Reported',
+      location: { lat, lng }
+    });
+
     const savedSOS = await newSOS.save();
     res.status(201).json(savedSOS);
+
   } catch (err) {
+    console.error("❌ SOS ERROR:", err.message);
     res.status(400).json({ message: "SOS ingestion failed" });
   }
 });
 
-
-// --- 5. PATCH: Update Issue Status ---
+// ===============================
+// 6. UPDATE POST STATUS
+// ===============================
 router.patch('/:id', async (req, res) => {
   try {
     const updatedPost = await Post.findByIdAndUpdate(
@@ -88,20 +117,24 @@ router.patch('/:id', async (req, res) => {
       { status: req.body.status },
       { new: true }
     );
+
     res.json(updatedPost);
   } catch (err) {
+    console.error("❌ UPDATE ERROR:", err.message);
     res.status(400).json({ message: "Status update failed" });
   }
 });
 
-
-// --- 6. DELETE: Admin Coordination ---
+// ===============================
+// 7. DELETE POST
+// ===============================
 router.delete('/:id', async (req, res) => {
   try {
     await Post.findByIdAndDelete(req.params.id);
     res.json({ message: "Task removed from system" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ DELETE ERROR:", err.message);
+    res.status(500).json({ message: "Delete failed" });
   }
 });
 

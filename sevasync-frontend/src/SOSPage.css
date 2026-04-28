@@ -1,0 +1,94 @@
+.sos-container {
+  height: 100vh;
+  width: 100%;
+  background: url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac") no-repeat center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* DARK OVERLAY (IMPORTANT) */
+.sos-container::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* MAIN CONTENT */
+.overlay {
+  position: relative;
+  z-index: 2;   /* 🔥 THIS FIXES EVERYTHING */
+  text-align: center;
+  color: white;
+  padding: 40px;
+  max-width: 500px;
+}
+
+/* TEXT */
+.location {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.desc {
+  color: #ddd;
+  margin-bottom: 20px;
+}
+
+/* SOS BUTTON */
+.sos-button {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  border: none;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 0 30px rgba(255, 77, 77, 0.8);
+  transition: 0.2s;
+}
+
+.sos-button:hover {
+  transform: scale(1.1);
+}
+
+.subtext {
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* CATEGORY BUTTONS */
+.category-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.category-buttons button {
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+  background: white;
+  color: black;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* STATUS */
+.status {
+  margin-top: 15px;
+  font-weight: bold;
+}

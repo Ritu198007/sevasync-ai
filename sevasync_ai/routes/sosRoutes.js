@@ -2,41 +2,49 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
 const path = require('path');
 
-// 1. Setup Video Storage (Saves to uploads/evidence)
+const uploadPath = path.join(__dirname, '..', 'uploads', 'evidence');
+
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+    console.log("📁 Created uploads/evidence folder");
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/evidence/');
+        cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
         cb(null, `SOS-${Date.now()}-${file.originalname}.webm`);
     }
 });
-const upload = multer({ storage: storage });
 
-// 2. The SOS Trigger Route
+const upload = multer({ storage });
+
 router.post('/trigger', upload.single('video'), async (req, res) => {
     try {
-        // Get coordinates from the frontend request
-        const { lat, lng } = req.body;
-        
-        // Updated volunteer list with your teammates
+        const { lat, lng, category = "General" } = req.body;
+
         const volunteerEmails = [
-            "madyasha32@gmail.com", 
-            "rmohapatra0715@gmail.com", 
+            "madyasha32@gmail.com",
+            "rmohapatra0715@gmail.com",
             "gourangajayanti1@gmail.com",
             "satyabratamahakud612@gmail.com"
         ];
 
         console.log("*****************************************");
         console.log("🚨 SOS ACTIVATED!");
-        console.log(`📍 Location Captured: ${lat}, ${lng}`);
+        console.log(`🚨 Type: ${category}`);
+        console.log(`📍 Location: ${lat}, ${lng}`);
+
         if (req.file) {
-            console.log(`📹 Evidence Video Saved: ${req.file.filename}`);
+            console.log(`📹 Video Saved: ${req.file.filename}`);
+        } else {
+            console.log("⚠️ No video uploaded");
         }
 
-        // 3. Setup the Email Transporter (Uses your .env secrets)
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -45,44 +53,51 @@ router.post('/trigger', upload.single('video'), async (req, res) => {
             }
         });
 
-        // 4. Define the Email Content (Fixed Google Maps Link)
         const googleMapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-        
+
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: volunteerEmails.join(','),
-            subject: "🚨 EMERGENCY: SevaSync AI Alert!",
+            subject: `🚨 ${category} Emergency Alert - SevaSync AI`,
             html: `
                 <div style="font-family: sans-serif; border: 3px solid red; padding: 20px; border-radius: 10px; max-width: 600px;">
-                    <h1 style="color: red; margin-top: 0;">Emergency Alert Received</h1>
-                    <p style="font-size: 1.1em;">A user has triggered an SOS and needs immediate assistance.</p>
-                    <hr style="border: 0; border-top: 1px solid #eee;">
-                    <p><b>📍 Location:</b> <a href="${googleMapsLink}" style="color: #007bff; text-decoration: none; font-weight: bold;">Click here to View on Google Maps</a></p>
+                    <h1 style="color: red;">🚨 Emergency Alert</h1>
+                    <p><b>🚨 Type:</b> ${category}</p>
+                    <p>A user has triggered an SOS and needs immediate assistance.</p>
+                    <hr>
+                    <p><b>📍 Location:</b> 
+                        <a href="${googleMapsLink}" target="_blank" style="color: #007bff; font-weight: bold;">
+                        View on Google Maps
+                        </a>
+                    </p>
                     <p><b>🌐 Coordinates:</b> ${lat}, ${lng}</p>
                     <p><b>⏰ Time:</b> ${new Date().toLocaleString('en-IN')}</p>
-                    <hr style="border: 0; border-top: 1px solid #eee;">
-                    <p style="font-size: 0.85em; color: #666; font-style: italic;">
-                        Note: An evidence video has been successfully recorded and stored in the system's secure 'evidence' folder for review.
+                    <hr>
+                    <p style="font-size: 0.9em; color: #555;">
+                        ${req.file 
+                            ? "📹 Evidence video has been recorded and stored in the system."
+                            : "⚠️ No video evidence was captured."}
                     </p>
                 </div>
             `
         };
 
-        // 5. Send the Email
         await transporter.sendMail(mailOptions);
-        console.log("✅ Volunteer Alert Emails Sent Successfully!");
+
+        console.log("✅ Emails sent successfully!");
         console.log("*****************************************");
 
-        res.status(200).json({ 
-            success: true, 
-            message: "SOS Logged and Volunteers Notified!" 
+        res.status(200).json({
+            success: true,
+            message: `${category} SOS sent successfully`
         });
 
     } catch (error) {
         console.error("❌ BACKEND ERROR:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
+
+        res.status(500).json({
+            success: false,
+            error: error.message
         });
     }
 });
